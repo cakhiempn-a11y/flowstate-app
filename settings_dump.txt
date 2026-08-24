@@ -1,0 +1,921 @@
+import React, { useState } from 'react';
+import { Card } from '../components/ui';
+import { useStore } from '../store/useStore';
+import { useTasks } from '../store/useTasks';
+import { useTranslation } from '../i18n/useTranslation';
+import { TimeInput } from '../components/TimeInput';
+import { DynamicIcon } from '../components/DynamicIcon';
+import { Sparkles,  Settings as SettingsIcon, Calendar, CheckSquare, Tags, Bell, BarChart2, Database, Globe, Moon, Sun, Monitor, Download, Upload, Trash2, Plus, Edit2, X, AlertCircle } from 'lucide-react';
+import { Category, AppSettings } from '../types';
+
+export function Settings() {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('general');
+  const language = useStore(state => state.language);
+  const setLanguage = useStore(state => state.setLanguage);
+  const settings = useStore(state => state.settings);
+  const updateSettings = useStore(state => state.updateSettings);
+  
+  const tabs = [
+    { id: 'general', label: t('settings.general') || 'General', icon: Globe },
+    { id: 'schedule', label: t('settings.schedule') || 'Schedule', icon: Calendar },
+    { id: 'tasks', label: t('settings.tasks') || 'Tasks', icon: CheckSquare },
+    { id: 'categories', label: t('settings.categories') || 'Categories', icon: Tags },
+    { id: 'notifications', label: t('settings.notifications') || 'Notifications', icon: Bell },
+    { id: 'analytics', label: t('settings.analytics') || 'Analytics', icon: BarChart2 },
+    { id: 'data', label: t('settings.data') || 'Data', icon: Database },
+  ];
+
+  return (
+    <div className="h-full flex flex-col space-y-6">
+      <header>
+        <h1 className="text-3xl font-black text-foreground tracking-tight">{t('nav.settings') || 'Settings'}</h1>
+      </header>
+      
+      <div className="flex flex-1 overflow-hidden bg-card border border-border rounded-2xl shadow-sm">
+        <div className="w-64 border-r border-border bg-background p-4 space-y-1 overflow-y-auto">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+            >
+              <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`} />
+              <span>{tab.label || tab.id}</span>
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-2xl mx-auto">
+            {activeTab === 'general' && <GeneralSettings language={language} setLanguage={setLanguage} settings={settings} updateSettings={updateSettings} t={t} />}
+            {activeTab === 'schedule' && <ScheduleSettings settings={settings} updateSettings={updateSettings} t={t} />}
+            {activeTab === 'tasks' && <TaskSettings settings={settings} updateSettings={updateSettings} t={t} />}
+            {activeTab === 'categories' && <CategorySettings t={t} />}
+            {activeTab === 'notifications' && <NotificationSettings settings={settings} updateSettings={updateSettings} t={t} />}
+            {activeTab === 'analytics' && <AnalyticsSettings settings={settings} updateSettings={updateSettings} t={t} />}
+            {activeTab === 'data' && <DataSettings t={t} />}
+          </div></div>
+      
+  );
+}
+
+function GeneralSettings({ language, setLanguage, settings, updateSettings, t }: any) {
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.language') || 'Language'}</h2>
+        <div className="space-y-2">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as any)}
+            className="w-full sm:w-64 border border-border rounded-lg text-sm bg-card px-3 py-2 focus:ring-2 focus:ring-primary outline-none"
+          >
+            <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="zh">中文</option>
+            <option value="ko">한국어</option>
+          </select>
+        </div>
+      </div>
+      
+      <hr className="border-border" />
+      
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.appearance') || 'Appearance'}</h2>
+        <div className="flex items-center space-x-3">
+          {[
+            { id: 'light', icon: Sun, label: t('settings.light') || 'Light' },
+            { id: 'dark', icon: Moon, label: t('settings.dark') || 'Dark' },
+            { id: 'system', icon: Monitor, label: t('settings.system') || 'System' },
+            { id: 'cute', icon: Sparkles, label: t('settings.cute') || 'Cute' }
+          ].map(theme => (
+            <button
+              key={theme.id}
+              onClick={() => updateSettings({ theme: theme.id })}
+              className={`flex-1 flex flex-col items-center justify-center space-y-2 p-4 border rounded-xl transition-all ${settings.theme === theme.id ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card hover:bg-background text-muted-foreground'}`}
+            >
+              <theme.icon className="w-6 h-6" />
+              <span className="text-sm font-semibold">{theme.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleSettings({ settings, updateSettings, t }: any) {
+  const days = [
+    t('settings.sunday') || 'Sunday', 
+    t('settings.monday') || 'Monday', 
+    t('settings.tuesday') || 'Tuesday', 
+    t('settings.wednesday') || 'Wednesday', 
+    t('settings.thursday') || 'Thursday', 
+    t('settings.friday') || 'Friday', 
+    t('settings.saturday') || 'Saturday'
+  ];
+  
+  const updateWorkingHours = (day: number, updates: any) => {
+    updateSettings({
+      workingHours: {
+        ...settings.workingHours,
+        [day]: { ...settings.workingHours[day], ...updates }
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.workingHours') || 'Working Hours'}</h2>
+        <div className="space-y-3">
+          {days.map((day, index) => {
+            const wh = settings.workingHours[index] || { enabled: false, start: '09:00', end: '17:00' };
+            return (
+              <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={wh.enabled}
+                    onChange={(e) => updateWorkingHours(index, { enabled: e.target.checked })}
+                    className="w-4 h-4 text-primary rounded border-border focus:ring-primary"
+                  />
+                  <span className="text-sm font-bold text-foreground w-24">{day}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <TimeInput disabled={!wh.enabled} value={wh.start} onChange={(val) => updateWorkingHours(index, { start: val })} className="w-[85px] border border-border rounded px-2 py-1 text-sm bg-card disabled:opacity-50 text-center" />
+                  <span className="text-muted-foreground">-</span>
+                  <TimeInput disabled={!wh.enabled} value={wh.end} onChange={(val) => updateWorkingHours(index, { end: val })} className="w-[85px] border border-border rounded px-2 py-1 text-sm bg-card disabled:opacity-50 text-center" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      <hr className="border-border" />
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-sm font-bold text-foreground mb-2">{t('settings.defaultTimeSlot') || 'Default Time Slot (mins)'}</h3>
+          <select
+            value={settings.defaultTimeSlot}
+            onChange={(e) => updateSettings({ defaultTimeSlot: parseInt(e.target.value) })}
+            className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+          >
+            <option value="15">15 {t('settings.minutes') || 'minutes'}</option>
+            <option value="30">30 {t('settings.minutes') || 'minutes'}</option>
+            <option value="45">45 {t('settings.minutes') || 'minutes'}</option>
+            <option value="60">60 {t('settings.minutes') || 'minutes'}</option>
+          </select>
+        </div>
+        
+        <div>
+          <h3 className="text-sm font-bold text-foreground mb-2">{t('settings.weekStartsOn') || 'Week Starts On'}</h3>
+          <select
+            value={settings.weekStartsOn}
+            onChange={(e) => updateSettings({ weekStartsOn: parseInt(e.target.value) })}
+            className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+          >
+            <option value="0">{t('settings.sunday') || 'Sunday'}</option>
+            <option value="1">{t('settings.monday') || 'Monday'}</option>
+          </select>
+        </div>
+        
+        <div>
+          <h3 className="text-sm font-bold text-foreground mb-2">{t('settings.timeFormat') || 'Time Format'}</h3>
+          <select
+            value={settings.timeFormat}
+            onChange={(e) => updateSettings({ timeFormat: e.target.value })}
+            className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+          >
+            <option value="12h">{t('settings.h12') || '12-hour (AM/PM)'}</option>
+            <option value="24h">{t('settings.h24') || '24-hour'}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskSettings({ settings, updateSettings, t }: any) {
+  const categories = useStore(s => s.categories);
+  
+  const updateTaskDefaults = (updates: any) => {
+    updateSettings({ taskDefaults: { ...settings.taskDefaults, ...updates } });
+  };
+  
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.taskDefaults') || 'Task Defaults'}</h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.defaultPriority') || 'Priority'}</label>
+            <select
+              value={settings.taskDefaults.priority}
+              onChange={(e) => updateTaskDefaults({ priority: e.target.value })}
+              className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            >
+              <option value="Low">{t('priority.low')}</option>
+              <option value="Medium">{t('priority.medium')}</option>
+              <option value="High">{t('priority.high')}</option>
+              <option value="Urgent">{t('priority.urgent')}</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.defaultStatus') || 'Status'}</label>
+            <select
+              value={settings.taskDefaults.status}
+              onChange={(e) => updateTaskDefaults({ status: e.target.value })}
+              className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            >
+              <option value="Not Started">{t('status.notStarted')}</option>
+              <option value="In Progress">{t('status.inProgress')}</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.defaultDuration') || 'Duration (mins)'}</label>
+            <input
+              type="number"
+              value={settings.taskDefaults.duration}
+              onChange={(e) => updateTaskDefaults({ duration: parseInt(e.target.value) })}
+              className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.defaultCategory') || 'Category'}</label>
+            <select
+              value={settings.taskDefaults.categoryId || ''}
+              onChange={(e) => updateTaskDefaults({ categoryId: e.target.value || null })}
+              className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            >
+              <option value="">{t('settings.noDefault') || 'No Default'}</option>
+              {categories.filter(c => !c.archived).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      
+      <hr className="border-border" />
+      
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.durationPresets') || 'Task Duration Presets'}</h2>
+        <div className="space-y-3 max-w-sm">
+          {(settings.taskDurationPresets || []).map((preset: number, i: number) => (
+            <div key={i} className="flex items-center justify-between p-2 bg-card border border-border rounded-lg">
+              <span className="text-sm font-semibold">{Math.floor(preset/60) > 0 ? `${Math.floor(preset/60)}h ` : ''}{preset%60 > 0 ? `${preset%60}m` : ''}</span>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => {
+                    const newPresets = [...(settings.taskDurationPresets || [])];
+                    if (i > 0) {
+                      [newPresets[i-1], newPresets[i]] = [newPresets[i], newPresets[i-1]];
+                      updateSettings({ taskDurationPresets: newPresets });
+                    }
+                  }}
+                  disabled={i === 0}
+                  className="p-1 hover:bg-muted text-muted-foreground rounded disabled:opacity-30"
+                >
+                  ↑
+                </button>
+                <button 
+                  onClick={() => {
+                    const newPresets = [...(settings.taskDurationPresets || [])];
+                    if (i < newPresets.length - 1) {
+                      [newPresets[i+1], newPresets[i]] = [newPresets[i], newPresets[i+1]];
+                      updateSettings({ taskDurationPresets: newPresets });
+                    }
+                  }}
+                  disabled={i === (settings.taskDurationPresets?.length || 0) - 1}
+                  className="p-1 hover:bg-muted text-muted-foreground rounded disabled:opacity-30"
+                >
+                  ↓
+                </button>
+                <button 
+                  onClick={() => {
+                    const newPresets = (settings.taskDurationPresets || []).filter((_, index) => index !== i);
+                    updateSettings({ taskDurationPresets: newPresets });
+                  }}
+                  className="p-1 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+          
+          <div className="flex items-center gap-2 pt-2">
+            <input 
+              type="number" 
+              id="newPresetHours" 
+              placeholder={t('common.hours') || 'Hours'} 
+              min="0"
+              className="w-20 text-sm bg-background border border-border rounded-md px-2 py-1 outline-none" 
+            />
+            <input 
+              type="number" 
+              id="newPresetMins" 
+              placeholder={t('common.minutes') || 'Minutes'} 
+              min="0"
+              max="59"
+              className="w-20 text-sm bg-background border border-border rounded-md px-2 py-1 outline-none" 
+            />
+            <button 
+              onClick={() => {
+                const hInput = document.getElementById('newPresetHours') as HTMLInputElement;
+                const mInput = document.getElementById('newPresetMins') as HTMLInputElement;
+                const h = parseInt(hInput.value) || 0;
+                const m = parseInt(mInput.value) || 0;
+                const total = h * 60 + m;
+                if (total > 0 && !(settings.taskDurationPresets || []).includes(total)) {
+                  updateSettings({ taskDurationPresets: [...(settings.taskDurationPresets || []), total] });
+                  hInput.value = '';
+                  mInput.value = '';
+                }
+              }}
+              className="px-3 py-1 bg-primary text-primary-foreground text-sm font-semibold rounded-md hover:bg-primary/90"
+            >
+              {t('settings.addDuration') || 'Add Duration'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <hr className="border-border" />
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.taskCompletion') || 'Completion Behavior'}</h2>
+        <div className="space-y-3">
+          <label className="flex items-start space-x-3 cursor-pointer">
+            <input
+              type="radio"
+              name="completion"
+              checked={settings.completionBehavior === 'auto'}
+              onChange={() => updateSettings({ completionBehavior: 'auto' })}
+              className="mt-1 w-4 h-4 text-primary focus:ring-primary"
+            />
+            <div>
+              <div className="text-sm font-bold text-foreground">{t('settings.autoComplete')}</div>
+              <div className="text-xs text-muted-foreground">{t('settings.autoCompleteMsg')}</div>
+            </div>
+          </label>
+          <label className="flex items-start space-x-3 cursor-pointer">
+            <input
+              type="radio"
+              name="completion"
+              checked={settings.completionBehavior === 'ask'}
+              onChange={() => updateSettings({ completionBehavior: 'ask' })}
+              className="mt-1 w-4 h-4 text-primary focus:ring-primary"
+            />
+            <div>
+              <div className="text-sm font-bold text-foreground">{t('settings.askComplete')}</div>
+              <div className="text-xs text-muted-foreground">{t('settings.autoCompleteMsg')}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategorySettings({ t }: any) {
+  const categories = useStore(s => s.categories);
+  const tasks = useTasks();
+  const addCategory = useStore(s => s.addCategory);
+  const updateCategory = useStore(s => s.updateCategory);
+  const deleteCategory = useStore(s => s.deleteCategory);
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  
+  const [formData, setFormData] = useState({ name: '', color: '#3b82f6', icon: 'tag', description: '', archived: false });
+  
+  const resetForm = () => {
+    setFormData({ name: '', color: '#3b82f6', icon: 'tag', description: '', archived: false });
+    setIsAdding(false);
+    setEditingId(null);
+  };
+  
+  const startEdit = (cat: Category) => {
+    setFormData({ name: cat.name, color: cat.color, icon: cat.icon || 'tag', description: cat.description || '', archived: !!cat.archived });
+    setEditingId(cat.id);
+    setIsAdding(false);
+  };
+  
+  const handleSave = () => {
+    if (!formData.name.trim()) return;
+    
+    if (editingId) {
+      updateCategory(editingId, formData);
+    } else {
+      addCategory({ name: formData.name, color: formData.color, icon: formData.icon, description: formData.description, archived: false });
+    }
+    resetForm();
+  };
+  
+  const handleDelete = (catId: string) => {
+    const usageCount = tasks.filter(taskItem => taskItem.categoryId === catId).length;
+    if (usageCount > 0) {
+      if (window.confirm(t('messages.confirmDeleteCategory'))) {
+        deleteCategory(catId);
+      }
+    } else {
+      deleteCategory(catId);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-foreground">{t('settings.categories') || 'Category Management'}</h2>
+        <button 
+          onClick={() => { resetForm(); setIsAdding(true); }}
+          className="flex items-center px-3 py-1.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="w-4 h-4 mr-1" /> {t('settings.addCategory')}
+        </button>
+      </div>
+      
+      {(isAdding || editingId) && (
+        <div className="p-4 bg-background border border-border rounded-xl space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-foreground">{editingId ? t('settings.editCategory') : t('settings.addCategory')}</h3>
+            <button onClick={resetForm} className="text-muted-foreground hover:text-muted-foreground"><X className="w-5 h-5" /></button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{t('settings.categoryName')}</label>
+              <input 
+                type="text" 
+                value={formData.name} 
+                onChange={e => setFormData({...formData, name: e.target.value})}
+                className="w-full border border-border rounded px-3 py-2 text-sm outline-none"
+                placeholder={t('settings.categoryName')}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{t('settings.color')}</label>
+              <div className="flex space-x-2">
+                <input 
+                  type="color" 
+                  value={formData.color} 
+                  onChange={e => setFormData({...formData, color: e.target.value})}
+                  className="w-10 h-10 rounded border-0 outline-none cursor-pointer"
+                />
+                <input 
+                  type="text" 
+                  value={formData.color} 
+                  onChange={e => setFormData({...formData, color: e.target.value})}
+                  className="flex-1 border border-border rounded px-3 py-2 text-sm outline-none uppercase font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{t('settings.icon') || 'Icon'}</label>
+              <div className="flex space-x-2 overflow-x-auto p-1 py-2 scrollbar-hide">
+                {['tag', 'book', 'briefcase', 'activity', 'book-open', 'user', 'heart', 'star', 'coffee', 'smile', 'music', 'flower', 'cloud', 'sun', 'moon'].map(ic => (
+                  <button 
+                    key={ic}
+                    type="button"
+                    onClick={() => setFormData({...formData, icon: ic})}
+                    className={`p-2 rounded-lg flex-shrink-0 ${formData.icon === ic ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground hover:bg-border'}`}
+                  >
+                    <DynamicIcon name={ic} className="w-5 h-5" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{t('settings.description')}</label>
+              <input 
+                type="text" 
+                value={formData.description} 
+                onChange={e => setFormData({...formData, description: e.target.value})}
+                className="w-full border border-border rounded px-3 py-2 text-sm outline-none"
+              />
+            </div>
+            {editingId && (
+              <div className="sm:col-span-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.archived} 
+                    onChange={e => setFormData({...formData, archived: e.target.checked})}
+                    className="w-4 h-4 text-primary rounded"
+                  />
+                  <span className="text-sm font-semibold text-foreground">{t('settings.archiveCategory')}</span>
+                </label>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-2 pt-2">
+            <button onClick={resetForm} className="px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted rounded-lg">{t('common.cancel')}</button>
+            <button onClick={handleSave} disabled={!formData.name.trim()} className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50">{t('common.save')}</button>
+          </div>
+        </div>
+      )}
+      
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-background border-b border-border">
+              <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.category')}</th>
+              <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('analytics.tasks')}</th>
+              <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.status')}</th>
+              <th className="px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">{t('settings.actions')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {categories.map(cat => {
+              const taskCount = tasks.filter(taskItem => taskItem.categoryId === cat.id).length;
+              return (
+                <tr key={cat.id} className="hover:bg-background transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-6 h-6 rounded flex items-center justify-center text-white" style={{ backgroundColor: cat.color }}>
+     <DynamicIcon name={cat.icon || 'tag'} className="w-3 h-3" />
+   </div>
+                      <div>
+                        <div className="text-sm font-bold text-foreground">{cat.name}</div>
+                        {cat.description && <div className="text-xs text-muted-foreground">{cat.description}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-muted-foreground">{taskCount}</td>
+                  <td className="px-4 py-3">
+                    {cat.archived ? 
+                      <span className="inline-block px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase rounded">{t('settings.archiveCategory')}</span> : 
+                      <span className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded">{t('settings.restoreCategory')}</span>
+                    }
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    <button onClick={() => startEdit(cat)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(cat.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {categories.length === 0 && (
+          <div className="p-8 text-center text-muted-foreground text-sm">{t('messages.noResults') || 'No categories found.'}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NotificationSettings({ settings, updateSettings, t }: any) {
+  const updateNotif = (updates: any) => {
+    updateSettings({ notifications: { ...settings.notifications, ...updates } });
+  };
+  
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.notifications') || 'Notifications'}</h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-card shadow-sm">
+            <div>
+              <div className="font-bold text-foreground text-sm">{t('settings.taskReminders')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('settings.remindBefore')}</div>
+            </div>
+            <div className="flex items-center space-x-4">
+              {settings.notifications.taskReminders && (
+                <select
+                  value={settings.notifications.reminderTime}
+                  onChange={(e) => updateNotif({ reminderTime: parseInt(e.target.value) })}
+                  className="text-sm border border-border rounded px-2 py-1 outline-none"
+                >
+                  <option value="5">{t('settings.min5')}</option>
+                  <option value="10">{t('settings.min10')}</option>
+                  <option value="15">{t('settings.min15')}</option>
+                  <option value="30">{t('settings.min30')}</option>
+                  <option value="60">{t('settings.hour1')}</option>
+                </select>
+              )}
+              <input
+                type="checkbox"
+                checked={settings.notifications.taskReminders}
+                onChange={(e) => updateNotif({ taskReminders: e.target.checked })}
+                className="w-5 h-5 text-primary rounded"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-card shadow-sm">
+            <div>
+              <div className="font-bold text-foreground text-sm">{t('settings.overdueAlerts')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('settings.remindOverdue')}</div>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.notifications.overdueAlerts}
+              onChange={(e) => updateNotif({ overdueAlerts: e.target.checked })}
+              className="w-5 h-5 text-primary rounded"
+            />
+          </div>
+          
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-card shadow-sm">
+            <div>
+              <div className="font-bold text-foreground text-sm">{t('settings.dailySummary')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('settings.remindSummary')}</div>
+            </div>
+            <div className="flex items-center space-x-4">
+              {settings.notifications.dailySummary && (
+                <TimeInput value={settings.notifications.dailySummaryTime} onChange={(val) => updateNotif({ dailySummaryTime: val })} className="w-[85px] text-sm border border-border rounded px-2 py-1 outline-none text-center" />
+              )}
+              <input
+                type="checkbox"
+                checked={settings.notifications.dailySummary}
+                onChange={(e) => updateNotif({ dailySummary: e.target.checked })}
+                className="w-5 h-5 text-primary rounded"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsSettings({ settings, updateSettings, t }: any) {
+  const updateAnalytics = (updates: any) => {
+    updateSettings({ analytics: { ...settings.analytics, ...updates } });
+  };
+  
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.analytics') || 'Analytics Rules'}</h2>
+        
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.effFormula')}</label>
+            <select
+              value={settings.analytics.efficiencyCalculation}
+              onChange={(e) => updateAnalytics({ efficiencyCalculation: e.target.value })}
+              className="w-full sm:w-64 border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            >
+              <option value="actual_vs_planned">{t('settings.effFormula1') || 'Actual Time / Planned Time × 100'}</option>
+              <option value="completed_vs_total">{t('settings.effFormula2') || 'Completed Tasks / Total Tasks × 100'}</option>
+            </select>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.highWorkload')}</label>
+              <input
+                type="number"
+                value={settings.analytics.workloadHighThreshold}
+                onChange={(e) => updateAnalytics({ workloadHighThreshold: parseInt(e.target.value) })}
+                className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.overloadThresh')}</label>
+              <input
+                type="number"
+                value={settings.analytics.workloadOverloadThreshold}
+                onChange={(e) => updateAnalytics({ workloadOverloadThreshold: parseInt(e.target.value) })}
+                className="w-full border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      
+<hr className="border-border" />
+      
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.workloadTimeline') || 'Workload Timeline'}</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">{t('settings.timelineInterval') || 'Timeline Interval'}</label>
+            <select
+              value={settings.analytics.timelineInterval || 60}
+              onChange={(e) => updateAnalytics({ timelineInterval: parseInt(e.target.value) })}
+              className="w-full sm:w-64 border border-border rounded-lg text-sm bg-card px-3 py-2 outline-none"
+            >
+              <option value="15">15 {t('settings.minutes') || 'minutes'}</option>
+              <option value="30">30 {t('settings.minutes') || 'minutes'}</option>
+              <option value="60">1 {t('settings.hour') || 'hour'}</option>
+              <option value="120">2 {t('settings.hours') || 'hours'}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <hr className="border-border" />
+      
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.dashboardInsights') || 'Dashboard Insights'}</h2>
+        
+        <div className="mb-4">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.analytics.showInsightDescriptions ?? true}
+              onChange={(e) => updateAnalytics({ showInsightDescriptions: e.target.checked })}
+              className="w-5 h-5 text-primary rounded border-border focus:ring-primary"
+            />
+            <span className="text-sm font-bold text-foreground">{t('settings.showInsightDescriptions') || 'Show Insight Descriptions'}</span>
+          </label>
+        </div>
+
+        <div className="space-y-2 max-w-sm bg-card border border-border rounded-lg p-3">
+          {[
+            { id: 'completedTasks', label: t('insights.completedTasks') || 'Completed Tasks' },
+            { id: 'completionRate', label: t('insights.completionRate') || 'Completion Rate' },
+            { id: 'freeTime', label: t('insights.freeTime') || 'Free Time' },
+            { id: 'scheduleUtilization', label: t('insights.scheduleUtilization') || 'Schedule Utilization' },
+            { id: 'busiestDay', label: t('insights.busiestDay') || 'Busiest Day' },
+            { id: 'freestDay', label: t('insights.freestDay') || 'Freest Day' },
+            { id: 'mostProductiveDay', label: t('insights.mostProductiveDay') || 'Most Productive Day' },
+            { id: 'mostTimeConsumingCategory', label: t('insights.mostTimeConsumingCategory') || 'Most Time-Consuming Category' },
+            { id: 'mostCompletedCategory', label: t('insights.mostCompletedCategory') || 'Most Completed Category' },
+            { id: 'highestWorkloadPeriod', label: t('insights.highestWorkloadPeriod') || 'Highest Workload Period' },
+            { id: 'mostOverloadedDay', label: t('insights.mostOverloadedDay') || 'Most Overloaded Day' },
+            { id: 'plannedVsActual', label: t('insights.plannedVsActual') || 'Planned vs Actual' },
+            { id: 'avgDailyActual', label: t('insights.avgDailyActual') || 'Average Daily Actual Time' },
+            { id: 'avgDailyPlanned', label: t('insights.avgDailyPlanned') || 'Average Daily Planned Time' },
+          ].map((insight) => {
+            const enabledList = settings.analytics.enabledInsights || [];
+            const isEnabled = enabledList.includes(insight.id);
+            const index = enabledList.indexOf(insight.id);
+            
+            return (
+              <div key={insight.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
+                <label className="flex items-center space-x-3 cursor-pointer flex-1">
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        updateAnalytics({ enabledInsights: [...enabledList, insight.id] });
+                      } else {
+                        updateAnalytics({ enabledInsights: enabledList.filter(id => id !== insight.id) });
+                      }
+                    }}
+                    className="w-4 h-4 text-primary rounded border-border focus:ring-primary"
+                  />
+                  <span className="text-sm">{insight.label}</span>
+                </label>
+                
+                {isEnabled && (
+                  <div className="flex gap-1">
+                    <button 
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => {
+                        const newArr = [...enabledList];
+                        [newArr[index-1], newArr[index]] = [newArr[index], newArr[index-1]];
+                        updateAnalytics({ enabledInsights: newArr });
+                      }}
+                      className="p-1 text-muted-foreground hover:bg-muted rounded disabled:opacity-30"
+                    >
+                      ↑
+                    </button>
+                    <button 
+                      type="button"
+                      disabled={index === enabledList.length - 1}
+                      onClick={() => {
+                        const newArr = [...enabledList];
+                        [newArr[index+1], newArr[index]] = [newArr[index], newArr[index+1]];
+                        updateAnalytics({ enabledInsights: newArr });
+                      }}
+                      className="p-1 text-muted-foreground hover:bg-muted rounded disabled:opacity-30"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+</div>
+    </div>
+  );
+}
+
+function DataSettings({ t }: any) {
+  const tasks = useTasks();
+  const categories = useStore(s => s.categories);
+  const timeEntries = useStore(s => s.timeEntries);
+  const settings = useStore(s => s.settings);
+  const resetData = useStore(s => s.resetData);
+  const importData = useStore(s => s.importData);
+  
+  const handleExport = () => {
+    const data = { tasks, categories, timeEntries, settings };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flowstate-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (window.confirm('This will overwrite current matching data. Are you sure?')) {
+          importData(data);
+          alert(t('messages.importSuccess'));
+        }
+      } catch (err) {
+        alert(t('messages.importError'));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+  
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t('settings.data') || 'Data Management'}</h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 border border-border rounded-xl bg-card shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+            <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+              <Download className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-bold text-foreground">{t('settings.exportBackup')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('settings.downloadJson')}</div>
+            </div>
+            <button onClick={handleExport} className="px-4 py-2 bg-muted hover:bg-muted text-foreground text-sm font-bold rounded-lg transition-colors">
+              {t('settings.exportData')}
+            </button>
+          </div>
+          
+          <div className="p-4 border border-border rounded-xl bg-card shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+            <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+              <Upload className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-bold text-foreground">{t('settings.importBackup')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t('settings.restoreExport')}</div>
+            </div>
+            <label className="px-4 py-2 bg-muted hover:bg-muted text-foreground text-sm font-bold rounded-lg transition-colors cursor-pointer">
+              {t('settings.importData')}
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 border border-red-200 bg-red-50 rounded-xl space-y-4">
+        <div className="flex items-center space-x-2 text-red-700">
+          <AlertCircle className="w-5 h-5" />
+          <h3 className="font-bold">{t('settings.dangerZone')}</h3>
+        </div>
+        <p className="text-sm text-red-600/80">{t('settings.irreversible')}</p>
+        
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button 
+            onClick={() => { if(window.confirm(t('messages.confirmResetSettings'))) resetData('settings') }}
+            className="px-4 py-2 bg-card border border-red-200 text-red-600 hover:bg-red-50 text-sm font-bold rounded-lg transition-colors"
+          >
+            {t('settings.resetSettings')}
+          </button>
+          <button 
+            onClick={() => { if(window.confirm(t('messages.confirmDeleteTasks'))) resetData('tasks') }}
+            className="px-4 py-2 bg-card border border-red-200 text-red-600 hover:bg-red-50 text-sm font-bold rounded-lg transition-colors"
+          >
+            {t('settings.deleteTasksTime')}
+          </button>
+          <button 
+            onClick={() => { if(window.confirm(t('messages.confirmFactoryReset'))) resetData('all') }}
+            className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-bold rounded-lg transition-colors shadow-sm"
+          >
+            {t('settings.factoryReset')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

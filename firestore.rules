@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitives
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return (!('uid' in data) || (data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 255))
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 255))
+        && (!('birthYear' in data) || (data.birthYear is string && data.birthYear.size() <= 10))
+        && (!('gender' in data) || (data.gender is string && data.gender.size() <= 50))
+        && (!('occupation' in data) || (data.occupation is string && data.occupation.size() <= 100))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2000))
+        && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 200000))
+        && (!('avatarType' in data) || (data.avatarType is string && data.avatarType.size() <= 100))
+        && (!('settings' in data) || data.settings is map)
+        && (!('language' in data) || data.language is string)
+        && (!('theme' in data) || data.theme is string)
+        && (!('updatedAt' in data) || data.updatedAt is string)
+        && (!('specialFeaturesPinHash' in data) || data.specialFeaturesPinHash is string)
+        && (!('specialFeaturesPinEnabled' in data) || data.specialFeaturesPinEnabled is bool);
+    }
+
+    // Task Validation
+    function isValidTask(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'title'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128 && data.userId == userId
+        && data.title is string && data.title.size() <= 500;
+    }
+
+    // RecurringTask Validation
+    function isValidRecurringTask(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'title'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128 && data.userId == userId
+        && data.title is string && data.title.size() <= 500;
+    }
+
+    // Category Validation
+    function isValidCategory(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'color', 'icon'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128 && data.userId == userId
+        && data.name is string && data.name.size() <= 100
+        && data.color is string && data.color.size() <= 20
+        && data.icon is string && data.icon.size() <= 50;
+    }
+
+    // TimeEntry Validation
+    function isValidTimeEntry(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'taskId', 'startTime', 'duration'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128 && data.userId == userId
+        && data.taskId is string && data.taskId.size() <= 128
+        && data.startTime is string
+        && data.duration is number;
+    }
+
+    // User Data Match
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users cannot be listed
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && (!('uid' in existing()) || !('uid' in incoming()) || incoming().uid == existing().uid);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+            match /profile/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+      match /specialFeatures/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      match /tasks/{taskId} {
+        allow get: if isOwner(userId) && isValidId(taskId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(taskId) && isValidTask(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(taskId) && isValidTask(incoming(), userId) && incoming().userId == existing().userId && incoming().id == existing().id;
+        allow delete: if isOwner(userId) && isValidId(taskId);
+      }
+
+      match /recurringTasks/{recurringTaskId} {
+        allow get: if isOwner(userId) && isValidId(recurringTaskId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(recurringTaskId) && isValidRecurringTask(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(recurringTaskId) && isValidRecurringTask(incoming(), userId) && incoming().userId == existing().userId && incoming().id == existing().id;
+        allow delete: if isOwner(userId) && isValidId(recurringTaskId);
+      }
+
+      match /categories/{categoryId} {
+        allow get: if isOwner(userId) && isValidId(categoryId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(categoryId) && isValidCategory(incoming(), userId) && incoming().userId == existing().userId && incoming().id == existing().id;
+        allow delete: if isOwner(userId) && isValidId(categoryId);
+      }
+
+      match /timeEntries/{timeEntryId} {
+        allow get: if isOwner(userId) && isValidId(timeEntryId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(timeEntryId) && isValidTimeEntry(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(timeEntryId) && isValidTimeEntry(incoming(), userId) && incoming().userId == existing().userId && incoming().id == existing().id;
+        allow delete: if isOwner(userId) && isValidId(timeEntryId);
+      }
+    }
+  }
+}

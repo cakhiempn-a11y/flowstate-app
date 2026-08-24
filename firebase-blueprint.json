@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 255 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "theme": { "type": "string", "enum": ["light", "dark", "system", "cute", "pink"] },
+        "language": { "type": "string", "enum": ["en", "vi", "zh", "ko"] },
+        "loginWelcomeImage": { "type": "string", "maxLength": 500 },
+        "settings": { "type": "object" },
+        "workingHours": { "type": "array" },
+        "activeTimer": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A single task instance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "date": { "type": "string", "maxLength": 20 },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "plannedDuration": { "type": "number" },
+        "deadline": { "type": "string", "maxLength": 50 },
+        "categoryId": { "type": "string", "maxLength": 128 },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Urgent"] },
+        "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed", "Cancelled", "Overdue", "Skipped"] },
+        "progress": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 5000 },
+        "recurrenceRule": { "type": "string", "maxLength": 50 },
+        "reminderEnabled": { "type": "boolean" },
+        "recurringTaskId": { "type": "string", "maxLength": 128 },
+        "originalDate": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "RecurringTask": {
+      "title": "RecurringTask",
+      "description": "A recurring task rule.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "startDate": { "type": "string", "maxLength": 20 },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "plannedDuration": { "type": "number" },
+        "categoryId": { "type": "string", "maxLength": 128 },
+        "priority": { "type": "string" },
+        "notes": { "type": "string", "maxLength": 5000 },
+        "reminderEnabled": { "type": "boolean" },
+        "recurrenceRule": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A task category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "color": { "type": "string", "maxLength": 20 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 500 },
+        "archived": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "name", "color", "icon"]
+    },
+    "TimeEntry": {
+      "title": "TimeEntry",
+      "description": "A time tracking entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "taskId": { "type": "string", "maxLength": 128 },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "taskId", "startTime", "duration"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and settings."
+    },
+    "users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "User's tasks."
+    },
+    "users/{userId}/recurringTasks/{recurringTaskId}": {
+      "schema": { "$ref": "#/entities/RecurringTask" },
+      "description": "User's recurring tasks."
+    },
+    "users/{userId}/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "User's custom categories."
+    },
+    "users/{userId}/timeEntries/{timeEntryId}": {
+      "schema": { "$ref": "#/entities/TimeEntry" },
+      "description": "User's time tracking entries."
+    }
+  }
+}
