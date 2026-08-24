@@ -10,13 +10,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#e86fa5" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.webmanifest?v=2" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
+          navigator.serviceWorker.register('/sw.js?v=2').then(reg => {
             console.log('ServiceWorker registered:', reg.scope);
           }).catch(err => {
             console.error('ServiceWorker registration failed:', err);
@@ -38,7 +38,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   
+    
+
+  
     <script>
+      // Capture early
+      window.promptFired = false;
+      window.appInstalled = false;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        window.promptFired = true;
+        window.deferredPrompt = e;
+      });
+      window.addEventListener('appinstalled', (e) => {
+        window.appInstalled = true;
+      });
+
       window.addEventListener('load', () => {
         const diag = document.createElement('div');
         diag.style.position = 'fixed';
@@ -57,19 +71,21 @@
           const modes = ['fullscreen', 'standalone', 'minimal-ui', 'browser'];
           const currentMode = modes.find(mode => window.matchMedia(`(display-mode: ${mode})`).matches) || 'unknown';
           
+          let swState = 'none';
+          if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            swState = 'controlled';
+          }
+          
           diag.innerHTML = `
-            <strong>PWA Diagnostics</strong><br/>
+            <strong>PWA Diagnostics v2</strong><br/>
             standalone: ${isStandalone}<br/>
             display-mode: ${currentMode}<br/>
-            prompt-fired: ${window.promptFired || false}<br/>
+            prompt-fired: ${window.promptFired}<br/>
+            app-installed: ${window.appInstalled}<br/>
+            sw: ${swState}<br/>
             url: ${window.location.pathname}
           `;
         };
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-          window.promptFired = true;
-          updateDiag();
-        });
         
         setInterval(updateDiag, 1000);
         updateDiag();
