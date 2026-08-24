@@ -4,7 +4,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, GoogleAuthProvider, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
@@ -103,19 +103,34 @@ export const Login: React.FC = () => {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
       clearTimeout(timeoutId);
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error("Google Auth Error:", err);
+      
+      const isDevOrPreview = window.location.hostname.includes('run.app') || window.location.hostname === 'localhost';
+      const isVercel = window.location.hostname.includes('vercel.app');
+      
+      // Temporary diagnostic logging
+      if (isDevOrPreview || isVercel) {
+        const errorDetails = `[DIAGNOSTIC] code: ${err.code}, message: ${err.message}, host: ${window.location.hostname}`;
+        console.warn(errorDetails);
+        if (err.code === 'auth/unauthorized-domain') {
+           setError(`Setup Required: The domain ${window.location.hostname} is not authorized in Firebase. Please add it to Firebase Console -> Authentication -> Settings -> Authorized Domains.`);
+           setAuthLoading(false);
+           return;
+        }
+      }
+
       if (err.code === 'auth/popup-closed-by-user') {
-        setError(t('auth.googleSignInFailed'));
+        setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Popup closed)' : ''));
       } else if (err.code === 'auth/unauthorized-domain') {
-        setError(t('auth.googleSignInFailed'));
+        setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Unauthorized domain)' : ''));
       } else if (err.code === 'auth/popup-blocked') {
         setError(t('auth.popupBlocked'));
       } else {
-        setError(t('auth.unableToSignIn'));
+        setError(t('auth.unableToSignIn') + (isDevOrPreview ? ` (${err.code})` : ''));
       }
       setAuthLoading(false);
     }

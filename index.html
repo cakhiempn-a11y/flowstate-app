@@ -9,6 +9,21 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e86fa5" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('ServiceWorker registered:', reg.scope);
+          }).catch(err => {
+            console.error('ServiceWorker registration failed:', err);
+          });
+        });
+      }
+    </script>
     <title>My Google AI Studio App</title>
     <meta name="description" content="An application built with Google AI Studio." />
     <meta property="og:title" content="My Google AI Studio App" />
