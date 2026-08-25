@@ -1,12 +1,13 @@
 
 
-const CACHE_NAME = 'flowstate-cache-v4';
+const CACHE_NAME = 'flowstate-cache-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/icons/notification-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -96,8 +97,7 @@ self.addEventListener('push', function(event) {
 
   const options = {
     body: body,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: '/icons/notification-icon.png',
     data: { url },
     vibrate: [100, 50, 100],
   };
