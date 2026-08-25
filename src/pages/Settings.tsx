@@ -848,6 +848,7 @@ function NotificationSettings({ settings, updateSettings, t }: any) {
                   onChange={(value) => updateNotif({ reminderTime: parseInt(value) })}
                   className="w-32"
                   options={[
+                    { value: "1", label: t('settings.min1') },
                     { value: "5", label: t('settings.min5') },
                     { value: "10", label: t('settings.min10') },
                     { value: "15", label: t('settings.min15') },
