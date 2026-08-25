@@ -1,11 +1,12 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 
 let initError: string | null = null;
 
-function getAdmin() {
-  if (admin.apps.length > 0) {
-    return admin;
+function getAdminApp() {
+  if (getApps().length > 0) {
+    return getApp();
   }
   try {
     const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -30,12 +31,12 @@ function getAdmin() {
     // Fix Vercel newline escaping issues in private key
     sa.private_key = sa.private_key.replace(/\\n/g, '\n');
 
-    admin.initializeApp({
-      credential: admin.credential.cert(sa)
+    const app = initializeApp({
+      credential: cert(sa)
     });
 
     initError = null;
-    return admin;
+    return app;
   } catch (err: any) {
     initError = `Firebase Admin Init Error: ${err.message}`;
     return null;
@@ -54,8 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { token, title, body } = req.body;
   if (!token) return res.status(400).json({ error: 'Token required', stage: 'request-validation' });
 
-  const adminInstance = getAdmin();
-  if (!adminInstance) {
+  const app = getAdminApp();
+  if (!app) {
     return res.status(500).json({
       error: initError || 'Firebase Admin not initialized.',
       stage: 'admin-init'
@@ -63,7 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const response = await adminInstance.messaging().send({
+    const messaging = getMessaging(app);
+    const response = await messaging.send({
       token,
       data: {
         title: title || 'FlowState',
