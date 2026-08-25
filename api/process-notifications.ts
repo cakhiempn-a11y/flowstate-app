@@ -4,6 +4,8 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { getFirestore } from 'firebase-admin/firestore';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
+const CRON_SECRET = process.env.CRON_SECRET || 'flowstate-cron-secure-token-8f92a';
+const DB_ID = 'ai-studio-remixproductivit-924ecc80-7397-459a-a1d5-518a5f1b7dbc';
 let initError: string | null = null;
 
 function getAdminApp() {
@@ -47,7 +49,13 @@ function getAdminApp() {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const providedSecret = req.headers.authorization?.replace('Bearer ', '') || req.query.cronSecret;
+  if (providedSecret !== CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Missing or invalid cronSecret' });
+  }
 
   const app = getAdminApp();
   if (!app) {
@@ -57,8 +65,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const db = getFirestore(app);
+  // Ensure we connect to the specific named database used by this applet
+  const db = getFirestore(app, DB_ID);
   const messaging = getMessaging(app);
+  
   const testNowStr = req.query.testNow as string;
   const now = testNowStr ? new Date(testNowStr) : new Date();
 
@@ -133,6 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
              const diffMs = taskStartUTC.getTime() - now.getTime();
              const diffMins = Math.floor(diffMs / 60000);
              
+             // If difference is exactly 0, or up to reminderMins
              if (diffMins >= 0 && diffMins <= reminderMins) {
                 const eventId = `reminder_${task.id}_${task.date}_${task.startTime}`;
                 await sendUserPush(eventId, 'FlowState', `Công việc sắp bắt đầu: ${task.title}`, '/tasks');

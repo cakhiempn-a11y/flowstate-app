@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Trigger FlowState Notifications
         run: |
-          curl -X GET "https://flowstate-app-tan.vercel.app/api/process-notifications"
+          curl -X GET -H "Authorization: Bearer flowstate-cron-secure-token-8f92a" "https://flowstate-app-tan.vercel.app/api/process-notifications"
