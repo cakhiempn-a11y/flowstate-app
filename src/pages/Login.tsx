@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { Navigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
@@ -157,6 +158,19 @@ export const Login: React.FC = () => {
       <div className="absolute top-6 right-6 flex items-center space-x-4">
         <LanguageSwitcher />
         <ThemeSwitcher currentTheme={theme} onChange={(t: any) => setSettings({ theme: t })} />
+      </div>
+
+      
+      {/* TEMPORARY DIAGNOSTICS */}
+      <div className="w-full max-w-md mx-auto mb-4 p-4 bg-black text-lime-400 text-xs font-mono rounded overflow-auto">
+        <p><strong>PRODUCTION DIAGNOSTICS</strong></p>
+        <p>origin: {window.location.origin}</p>
+        <p>hostname: {window.location.hostname}</p>
+        <p>projectId: {firebaseConfig?.projectId || 'ai-studio-applet-webapp-1f194'}</p>
+        <p>authDomain: {firebaseConfig?.authDomain || 'ai-studio-applet-webapp-1f194.firebaseapp.com'}</p>
+        <p>error.code: {redirectError ? (redirectError as any).code : 'none'}</p>
+        <p>error.message: {redirectError ? (redirectError as any).message : 'none'}</p>
+        <p>authLoading: {authLoading ? 'true' : 'false'}</p>
       </div>
 
       <div className="w-full max-w-md mx-auto flex flex-col items-center mb-8">
