@@ -1,0 +1,14 @@
+name: Notification Scheduler
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-scheduler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger FlowState Notifications
+        run: |
+          curl -X GET "https://flowstate-app-tan.vercel.app/api/process-notifications"

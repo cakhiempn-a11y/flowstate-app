@@ -21,6 +21,7 @@ export const defaultSettings: AppSettings = {
   defaultTimeSlot: 30,
   weekStartsOn: 1,
   timeFormat: '24h',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   taskDurationPresets: [15, 30, 45, 60, 90, 120, 180, 240, 360, 480],
   taskDefaults: {
     priority: 'Medium',

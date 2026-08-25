@@ -62,6 +62,7 @@ export interface AppSettings {
   defaultTimeSlot: number; // minutes
   weekStartsOn: 0 | 1; // 0 Sunday, 1 Monday
   timeFormat: '12h' | '24h';
+  timezone?: string;
   taskDurationPresets?: number[];
   taskDefaults: {
     priority: Priority;
