@@ -75,6 +75,11 @@ service cloud.firestore {
 
     // User Data Match
     match /users/{userId} {
+      // Action: Manage Devices
+      match /devices/{deviceId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false; // Users cannot be listed
       allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());

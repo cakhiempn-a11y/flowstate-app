@@ -1,3 +1,5 @@
+
+
 const CACHE_NAME = 'flowstate-cache-v4';
 const STATIC_ASSETS = [
   '/',
@@ -73,4 +75,52 @@ self.addEventListener('fetch', (event) => {
       })
     );
   }
+});
+
+
+
+
+self.addEventListener('push', function(event) {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      console.error('Error parsing push data', e);
+    }
+  }
+  
+  const title = data.notification?.title || data.data?.title || data.title || 'FlowState';
+  const body = data.notification?.body || data.data?.body || data.body || 'You have a new notification';
+  const url = data.notification?.click_action || data.data?.url || data.url || '/';
+
+  const options = {
+    body: body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url },
+    vibrate: [100, 50, 100],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  
+  const urlToOpen = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });

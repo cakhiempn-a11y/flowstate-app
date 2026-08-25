@@ -136,3 +136,23 @@ export const syncFirebase = {
     }
   }
 };
+
+export const saveDeviceToken = async (token: string, platform: string) => {
+  const { auth, db } = await import('./firebase');
+  const { doc, setDoc } = await import('firebase/firestore');
+  if (!auth.currentUser) return;
+  
+  let deviceId = localStorage.getItem('flowstate_device_id');
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem('flowstate_device_id', deviceId);
+  }
+
+  await setDoc(doc(db, 'users', auth.currentUser.uid, 'devices', deviceId), {
+    token,
+    platform,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    userId: auth.currentUser.uid,
+  }, { merge: true });
+};
