@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import firebaseConfig from '../../firebase-applet-config.json';
 import { Navigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
@@ -109,43 +108,25 @@ export const Login: React.FC = () => {
   };
 
     const handleGoogleAuth = async () => {
+    if (authLoading) return;
     setAuthLoading(true);
     setError(null);
 
-    // Timeout safety
-    const timeoutId = setTimeout(() => {
-      setAuthLoading(false);
-      setError("Đăng nhập đang mất quá nhiều thời gian. Vui lòng thử lại. (Login took too long)");
-    }, 60000); // 1 minute timeout
-
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
-      clearTimeout(timeoutId);
+      await signInWithPopup(auth, provider);
+      // Success is naturally handled by onAuthStateChanged in AuthContext
     } catch (err: any) {
-      clearTimeout(timeoutId);
       console.error("Google Auth Error:", err);
       
       const isDevOrPreview = window.location.hostname.includes('run.app') || window.location.hostname === 'localhost';
-      const isVercel = window.location.hostname.includes('vercel.app');
       
-      // Temporary diagnostic logging
-      if (isDevOrPreview || isVercel) {
-        const errorDetails = `[DIAGNOSTIC] code: ${err.code}, message: ${err.message}, host: ${window.location.hostname}`;
-        console.warn(errorDetails);
-        if (err.code === 'auth/unauthorized-domain') {
-           setError(`Setup Required: The domain ${window.location.hostname} is not authorized in Firebase. Please add it to Firebase Console -> Authentication -> Settings -> Authorized Domains.`);
-           setAuthLoading(false);
-           return;
-        }
-      }
-
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Popup closed)' : ''));
       } else if (err.code === 'auth/unauthorized-domain') {
         setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Unauthorized domain)' : ''));
       } else if (err.code === 'auth/popup-blocked') {
-        setError(t('auth.popupBlocked'));
+        setError(t('auth.popupBlocked') || 'Popup blocked by browser. Please allow popups for this site.');
       } else {
         setError(t('auth.unableToSignIn') + (isDevOrPreview ? ` (${err.code})` : ''));
       }
@@ -161,17 +142,7 @@ export const Login: React.FC = () => {
       </div>
 
       
-      {/* TEMPORARY DIAGNOSTICS */}
-      <div className="w-full max-w-md mx-auto mb-4 p-4 bg-black text-lime-400 text-xs font-mono rounded overflow-auto">
-        <p><strong>PRODUCTION DIAGNOSTICS</strong></p>
-        <p>origin: {window.location.origin}</p>
-        <p>hostname: {window.location.hostname}</p>
-        <p>projectId: {firebaseConfig?.projectId || 'ai-studio-applet-webapp-1f194'}</p>
-        <p>authDomain: {firebaseConfig?.authDomain || 'ai-studio-applet-webapp-1f194.firebaseapp.com'}</p>
-        <p>error.code: {redirectError ? (redirectError as any).code : 'none'}</p>
-        <p>error.message: {redirectError ? (redirectError as any).message : 'none'}</p>
-        <p>authLoading: {authLoading ? 'true' : 'false'}</p>
-      </div>
+      
 
       <div className="w-full max-w-md mx-auto flex flex-col items-center mb-8">
         <div className="flex items-center space-x-3 mb-8">
