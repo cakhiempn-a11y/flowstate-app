@@ -1,14 +1,10 @@
 name: Notification Scheduler
-
 on:
-  schedule:
-    - cron: '* * * * *'
   workflow_dispatch:
-
 jobs:
   run-scheduler:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger FlowState Notifications
         run: |
-          curl -X GET -H "Authorization: Bearer flowstate-cron-secure-token-8f92a" "https://flowstate-app-tan.vercel.app/api/process-notifications"
+          curl -X POST -H "Authorization: Bearer flowstate-cron-secure-token-8f92a" "https://flowstate-app-tan.vercel.app/api/process-notifications"

@@ -72,9 +72,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const testNowStr = req.query.testNow as string;
   const now = testNowStr ? new Date(testNowStr) : new Date();
 
+  const startMs = Date.now();
   const logs: string[] = [];
   let processedUsers = 0;
   let sentCount = 0;
+  let tasksEvaluated = 0;
+  let remindersEvaluated = 0;
+  let remindersDue = 0;
+  
+  let overdueDue = 0;
+  let dailySummariesEvaluated = 0;
+  let skippedCount = 0;
 
   try {
     const usersSnap = await db.collection('users').get();
@@ -133,7 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (settings.notifications.taskReminders) {
         const reminderMins = settings.notifications.reminderTime || 5;
-        let evaluated = 0;
+        
         let selected = 0;
         let remindersDue = 0;
         
@@ -141,10 +149,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
            if (task.status === 'Completed' || task.status === 'Cancelled' || !task.startTime || !task.date) continue;
            if (task.date !== localDateStr && task.date !== tomorrowStr) continue;
            
-           evaluated++;
+           tasksEvaluated++; remindersEvaluated++;
            
            if (!task.reminderEnabled) {
-              logs.push(`Task ${task.id}: skipped (reminderEnabled false)`);
+              skippedCount++; logs.push(`Task ${task.id}: skipped (reminderEnabled false)`);
               continue;
            }
            
@@ -164,17 +172,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (sent) selected++;
                 logs.push(`Task ${task.id} (${task.title}): reminderTime=${formatInTimeZone(reminderTimeUTC, tz, 'HH:mm')}, diffMins=${diffMins}, sent=${sent}`);
              } else {
-                logs.push(`Task ${task.id} (${task.title}): skipped, reminderTime=${formatInTimeZone(reminderTimeUTC, tz, 'HH:mm')}, diffMins=${diffMins} outside window (0-60)`);
+                skippedCount++; logs.push(`Task ${task.id} (${task.title}): skipped, reminderTime=${formatInTimeZone(reminderTimeUTC, tz, 'HH:mm')}, diffMins=${diffMins} outside window (0-60)`);
              }
            } catch (e: any) {
              logs.push(`Task ${task.id}: Error parsing time ${e.message}`);
            }
         }
-        logs.push(`TaskReminders: Evaluated ${evaluated}, Due ${remindersDue}, Selected ${selected}`);
+        logs.push(`TaskReminders: Evaluated ${remindersEvaluated}, Due ${remindersDue}, Selected ${selected}`);
       }
 
       if (settings.notifications.overdueAlerts) {
-         let overdueEvaluated = 0;
+         
          let overdueDue = 0;
          let overdueSent = 0;
 
@@ -186,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                if (task.date !== yesterdayStr) continue;
            }
 
-           overdueEvaluated++;
+           tasksEvaluated++; overdueEvaluated++;
            
            try {
              const taskEndUTC = fromZonedTime(`${task.date}T${task.endTime}:00`, tz);
@@ -210,7 +218,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (settings.notifications.dailySummary) {
          const summaryTime = settings.notifications.dailySummaryTime || '07:00';
          
-         let summaryEvaluated = 1;
+         dailySummariesEvaluated++;
          let summarySent = 0;
          
          // Only send if we are within 2 hours of the summary time to prevent late-day sends if the cron was completely down
@@ -226,13 +234,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const sent = await sendUserPush(eventId, 'FlowState', `Lịch hôm nay: ${tasks.filter((t: any) => t.date === localDateStr).length} công việc`, '/calendar');
             if (sent) summarySent++;
          } else {
-            logs.push(`Summary skipped: diffMins=${diffMins} outside window`);
+            skippedCount++; logs.push(`Summary skipped: diffMins=${diffMins} outside window`);
          }
-         logs.push(`DailySummary: Evaluated ${summaryEvaluated}, Sent ${summarySent}`);
+         logs.push(`DailySummary: Evaluated 1, Sent ${summarySent}`);
       }
     }
 
-    return res.status(200).json({ success: true, processedUsers, sentCount, logs });
+    const executionDurationMs = Date.now() - startMs;
+    return res.status(200).json({ 
+      success: true, 
+      processedUsers, 
+      tasksEvaluated,
+      remindersEvaluated,
+      remindersDue,
+      overdueEvaluated,
+      overdueDue,
+      dailySummariesEvaluated,
+      sentCount,
+      skippedCount,
+      executionDurationMs,
+      // logs 
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message, logs });
   }
