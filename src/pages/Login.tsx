@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
@@ -17,7 +17,7 @@ import { Quote } from 'lucide-react';
 
 
 export const Login: React.FC = () => {
-  const { user, loading, refreshUser } = useAuth();
+  const { user, loading, redirectError, refreshUser } = useAuth();
     const theme = useStore(s => s.settings.theme);
   const { t, language } = useTranslation();
   
@@ -29,6 +29,22 @@ export const Login: React.FC = () => {
   const [name, setName] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (redirectError) {
+      const err = redirectError as any;
+      const isDevOrPreview = window.location.hostname.includes('run.app') || window.location.hostname === 'localhost';
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Popup closed)' : ''));
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError(t('auth.googleSignInFailed') + (isDevOrPreview ? ' (Unauthorized domain)' : ''));
+      } else if (err.code === 'auth/popup-blocked') {
+        setError(t('auth.popupBlocked'));
+      } else {
+        setError(t('auth.unableToSignIn') + (isDevOrPreview ? ` (${err.code})` : ''));
+      }
+    }
+  }, [redirectError, t]);
 
 
 
