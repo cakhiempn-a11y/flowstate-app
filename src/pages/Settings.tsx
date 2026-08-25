@@ -721,6 +721,12 @@ function NotificationSettings({ settings, updateSettings, t }: any) {
       });
       if (!res.ok) {
          const errData = await res.json().catch(() => ({}));
+         
+         if (errData.code === 'messaging/invalid-registration-token' || errData.code === 'messaging/registration-token-not-registered') {
+           localStorage.removeItem('flowstate_fcm_token');
+           setTokenStr('');
+         }
+         
          throw new Error(errData.error || `Server returned ${res.status}`);
       }
       setTestStatus('Test notification sent!');
