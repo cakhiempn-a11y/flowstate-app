@@ -1,6 +1,6 @@
 import { DatePicker } from './DatePicker';
 import { Select } from './ui';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, Trash2, RepeatIcon, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Button } from './ui';
 import { Task, Priority, Status, RecurrenceRule, RecurringTask } from '../types';
@@ -76,7 +76,16 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
   const [showConflictConfirmation, setShowConflictConfirmation] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      return;
+    }
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
     if (existingTask) {
       setFormData({
         title: existingTask.title,
@@ -124,7 +133,7 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
         recurrenceRule: null,
       });
     }
-  }, [existingTask, defaultDate, defaultTime, settings, categories, parentRecurringTask]);
+  }, [isOpen, existingTask, defaultDate, defaultTime, settings, categories, parentRecurringTask]);
 
   if (!isOpen) return null;
 

@@ -212,7 +212,7 @@ export default function DailySchedule({ filters }: { filters?: CalendarFilters }
 
       {isModalOpen && (
         <TaskModal 
-          existingTask={selectedTask ? tasks.find(t => t.id === selectedTask) : undefined} isOpen={!!selectedTask} 
+          existingTask={selectedTask ? tasks.find(t => t.id === selectedTask) : undefined} isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
         />
       )}
