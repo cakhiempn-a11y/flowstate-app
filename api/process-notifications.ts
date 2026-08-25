@@ -69,6 +69,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let remindersDue = 0;
   let overdueEvaluated = 0;
   let overdueDue = 0;
+  let overdueAlreadySent = 0;
+  let overdueSelected = 0;
+  let overdueSendAttempts = 0;
+  let overdueSendSuccesses = 0;
+  let overdueSendFailures = 0;
   let dailySummariesEvaluated = 0;
   let skippedCount = 0;
   let stage = 'init';
@@ -263,6 +268,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       remindersDue,
       overdueEvaluated,
       overdueDue,
+      overdueAlreadySent,
+      overdueSelected,
+      overdueSendAttempts,
+      overdueSendSuccesses,
+      overdueSendFailures,
       dailySummariesEvaluated,
       sentCount,
       skippedCount,
