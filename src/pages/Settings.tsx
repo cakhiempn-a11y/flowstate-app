@@ -670,9 +670,8 @@ function NotificationSettings({ settings, updateSettings, t }: any) {
            registration = await navigator.serviceWorker.register('/sw.js');
         }
         
-        if (!registration.active) {
-           setStatusMsg('Waiting for Service Worker to activate...');
-        }
+        setStatusMsg('Waiting for Service Worker to become ready...');
+        registration = await navigator.serviceWorker.ready;
 
         setStatusMsg('Getting FCM token...');
         const vapidKey = import.meta.env.VITE_FCM_VAPID_KEY;
@@ -700,7 +699,8 @@ function NotificationSettings({ settings, updateSettings, t }: any) {
       }
     } catch (e: any) {
       console.error('Notification Setup Error:', e);
-      setErrorMsg(e.message || "An unknown error occurred.");
+      // Detailed error for desktop diagnostics
+      setErrorMsg(e.code ? `${e.code}: ${e.message}` : (e.message || "An unknown error occurred."));
       setStatusMsg('');
     } finally {
       setIsRequesting(false);

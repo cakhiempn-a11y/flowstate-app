@@ -271,7 +271,7 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
         startDate: formData.date,
         recurrenceRule: formData.recurrenceRule,
         notes: '',
-        reminderEnabled: false
+        reminderEnabled: settings?.notifications?.taskReminders ?? true
       });
     } else if (existingTask) {
       updateTask(existingTask.id, {
@@ -300,7 +300,7 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
         deadline: formData.deadline,
         notes: '',
         recurrenceRule: 'None',
-        reminderEnabled: false,
+        reminderEnabled: settings?.notifications?.taskReminders ?? true,
       });
     }
     onClose();
@@ -329,7 +329,7 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
         deadline: formData.deadline,
           notes: '',
           recurrenceRule: 'None',
-          reminderEnabled: false,
+          reminderEnabled: settings?.notifications?.taskReminders ?? true,
           recurringTaskId: parentRecurringTask.id,
           originalDate: existingTask.originalDate || existingTask.date
         });
@@ -371,7 +371,7 @@ export default function TaskModal({ isOpen, onClose, existingTask, defaultDate, 
         startDate: formData.date,
         recurrenceRule: formData.recurrenceRule || parentRecurringTask.recurrenceRule,
         notes: '',
-        reminderEnabled: false
+        reminderEnabled: settings?.notifications?.taskReminders ?? true
       });
     } else if (scope === 'all') {
       updateRecurringTask(parentRecurringTask.id, {
